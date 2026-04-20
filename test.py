@@ -12,10 +12,13 @@ output_folder.mkdir(parents=True, exist_ok=True)
 plasma_freqs = []
 time = []
 all_plasma_freqs = []
+count_52 = 0
+total_files = 0
+all_location_52 = []
 for file in folder_path.glob('*.0001_nc'):
     print("--------------------------------------------------------------")
     print(f"Processing file: {file.name}")
-
+    total_files += 1
     ds = nc.Dataset(str(file), 'r')
 
     # --- Location of the profile ---
@@ -31,11 +34,11 @@ for file in folder_path.glob('*.0001_nc'):
     ed_idk = []
 
 
-    print(f"Profile Location:")
-    print(f"  Latitude : {lat[0]:.4f}°")
-    print(f"  Longitude: {lon[0]:.4f}°")
-    print(f"  Altitude range: {msl_alt.min():.1f} – {msl_alt.max():.1f} km")
-    print(f"  Peak electron density: {ed.max():.2e} e/m³")
+    #print(f"Profile Location:")
+    #print(f"  Latitude : {lat[0]:.4f}°")
+    #print(f"  Longitude: {lon[0]:.4f}°")
+    #print(f"  Altitude range: {msl_alt.min():.1f} – {msl_alt.max():.1f} km")
+    #print(f"  Peak electron density: {ed.max():.2e} e/m³")
 
 
     # Find index of minimum altitude (perigee)
@@ -44,9 +47,10 @@ for file in folder_path.glob('*.0001_nc'):
     perigee_lat = lat[perigee_idx]
     perigee_lon = lon[perigee_idx]
     perigee_alt = msl_alt[perigee_idx]
-
-    print(f"Perigee (representative location):")
-    print(f"  Lat: {perigee_lat:.4f}°, Lon: {perigee_lon:.4f}°, Alt: {perigee_alt:.1f} km")
+    dt = datetime.datetime(getattr(ds, 'year', 0), getattr(ds, 'month', 0), getattr(ds, 'day', 0), getattr(ds, 'hour', 0), getattr(ds, 'minute', 0), int(getattr(ds, 'second', 0)))
+    
+    #print(f"Perigee (representative location):")
+    #print(f"  Lat: {perigee_lat:.4f}°, Lon: {perigee_lon:.4f}°, Alt: {perigee_alt:.1f} km")
 
     # List all variables
     #for var in ds.variables:
@@ -88,16 +92,17 @@ for file in folder_path.glob('*.0001_nc'):
 
         print(f"Optimal reflection altitude: {h_peak:.1f} km")
         print(f"Plasma frequency there: {fp_MHz:.2f} MHz")
-
-
+        if fp_MHz > 5.2:
+            count_52 += 1
+            all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz))
 
         plasma_freqs.append(fp_MHz)
 
     # Extract time from global attributes
-    dt = datetime.datetime(getattr(ds, 'year', 0), getattr(ds, 'month', 0), getattr(ds, 'day', 0), getattr(ds, 'hour', 0), getattr(ds, 'minute', 0), int(getattr(ds, 'second', 0)))
     print(dt)
     time.append(dt)
     all_plasma_freqs.append((dt, fp_MHz))
+
     ds.close()
 
 print("\nSummary of plasma frequencies at optimal reflection altitudes:")
@@ -106,6 +111,16 @@ for i, freq in enumerate(plasma_freqs):
     print(f"  File {i+1}: {freq:.2f} MHz")
 
 
+with open("profiles_with_fp_gt_5.2MHz.csv", 'w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Time (UTC)', 'Latitude', 'Longitude', 'Optimal Reflection Altitude (km)', 'Plasma Frequency (MHz)'])
+    for loc in all_location_52:
+        writer.writerow(loc)
+
+
+
+
+print(f"\nNumber of profiles with plasma frequency > 5.2 MHz: {count_52} out of {total_files}")
 all_plasma_freqs.sort(key=lambda item: item[0])
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -114,6 +129,15 @@ ax.set_xlabel("Time (UTC)")
 ax.set_ylabel("Plasma Frequency at Optimal Reflection Altitude (MHz)")
 ax.set_title("Plasma Frequency at Optimal Reflection Altitude Over Time")
 ax.grid(True)
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot([item[0] for item in all_plasma_freqs if item[1] > 5.2], [item[1] for item in all_plasma_freqs if item[1] > 5.2], 'o-')
+ax.set_xlabel("Time (UTC)")
+ax.set_ylabel("Plasma Frequency at Optimal Reflection Altitude (MHz) > 5.2 MHz")
+ax.set_title("Plasma Frequency at Optimal Reflection Altitude Over Time")
+ax.grid(True)
+
+
 plt.show()
 
 
