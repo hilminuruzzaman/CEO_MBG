@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import csv
 import datetime
+from meteor_spike_classifier import MeteorSpikeClassifier
 # Open the file
 
 folder_path = Path('asd')
@@ -15,6 +16,7 @@ all_plasma_freqs = []
 count_52 = 0
 total_files = 0
 all_location_52 = []
+no_nan = 0
 for file in folder_path.glob('*.0001_nc'):
     print("--------------------------------------------------------------")
     print(f"Processing file: {file.name}")
@@ -71,6 +73,9 @@ for file in folder_path.glob('*.0001_nc'):
 
     alt  = msl_alt[:]  # Altitude (km)
     Ne   = ed[:]     # Electron density (electrons/m³)
+    
+
+
 
     # Find the E-region peak gradient (meteor ablation zone)
     mask = (alt >= 80) & (alt <= 120)
@@ -89,12 +94,22 @@ for file in folder_path.glob('*.0001_nc'):
             print("Plasma frequency calculation resulted in NaN. Skipping this profile.")
             continue
         print(fp_hz)
-
+        no_nan += 1
         print(f"Optimal reflection altitude: {h_peak:.1f} km")
         print(f"Plasma frequency there: {fp_MHz:.2f} MHz")
-        if fp_MHz > 5.2:
+        if fp_MHz > np.sqrt(1-(6378/(6378+h_peak))**2)*30:
             count_52 += 1
-            all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz))
+            classifier = MeteorSpikeClassifier()
+            # Create classifier and classify
+            verdict, details = classifier.classify(alt, Ne)
+            all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz, verdict, details['reality_score'],details['confidence']))
+            if verdict == "ACCEPT":
+                fig, axes = plt.subplots(figsize=(8, 5))
+                axes.plot(Ne,alt, label='Electron Density Profile')
+                axes.set_xlabel("Electron Density (e/m³)")
+                axes.set_ylabel("Altitude (km)")
+                axes.set_title(f"Profile with suspected meteor spike - {file.stem}")
+                axes.grid(True)
 
         plasma_freqs.append(fp_MHz)
 
@@ -113,14 +128,16 @@ for i, freq in enumerate(plasma_freqs):
 
 with open("profiles_with_fp_gt_5.2MHz.csv", 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    writer.writerow(['Time (UTC)', 'Latitude', 'Longitude', 'Optimal Reflection Altitude (km)', 'Plasma Frequency (MHz)'])
+    writer.writerow(['Time (UTC)', 'Latitude', 'Longitude', 'Optimal Reflection Altitude (km)', 'Plasma Frequency (MHz)', 'Verdict', 'Reality Score', 'Confidence'])
     for loc in all_location_52:
         writer.writerow(loc)
 
 
 
+print(f"\nNumber of profiles with sufficient plasma frequency (calculated using height): {len(plasma_freqs)} out of {total_files}")
+print(f"\nNumber of profiles with valid plasma frequency calculations: {no_nan} out of {total_files}")
+print(f"\nNumber of profiles with sufficient plasma frequency (calculated using height also): {count_52} out of {total_files}")
 
-print(f"\nNumber of profiles with plasma frequency > 5.2 MHz: {count_52} out of {total_files}")
 all_plasma_freqs.sort(key=lambda item: item[0])
 
 fig, ax = plt.subplots(figsize=(8, 5))
