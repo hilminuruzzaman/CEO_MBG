@@ -102,13 +102,18 @@ for file in folder_path.glob('*.0001_nc'):
             classifier = MeteorSpikeClassifier()
             # Create classifier and classify
             verdict, details = classifier.classify(alt, Ne)
-            all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz, verdict, details['reality_score'],details['confidence']))
+            max_theta = np.rad2deg(np.arccos(6378/(6378+h_peak)))
+            sin_theta_crit = np.sqrt(1-fp_MHz**2/30**2)
+            xx = np.pi - np.arcsin(sin_theta_crit*(6378+h_peak)/6378)
+            min_theta = 180 - np.rad2deg(xx + np.arcsin(sin_theta_crit))
+            all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz, max_theta, min_theta, verdict, details['reality_score'],details['confidence']))
             if verdict == "ACCEPT":
+                aewkfbjruwernaads=1
                 fig, axes = plt.subplots(figsize=(8, 5))
                 axes.plot(Ne,alt, label='Electron Density Profile')
-                axes.set_xlabel("Electron Density (e/m³)")
+                axes.set_xlabel("Electron Density (e/cm³)")
                 axes.set_ylabel("Altitude (km)")
-                axes.set_title(f"Profile with suspected meteor spike - {file.stem}")
+                axes.set_title(f"Profile with Suspected Meteor Trail Spike - {file.stem}")
                 axes.grid(True)
 
         plasma_freqs.append(fp_MHz)
@@ -128,7 +133,7 @@ for i, freq in enumerate(plasma_freqs):
 
 with open("profiles_with_fp_gt_5.2MHz.csv", 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    writer.writerow(['Time (UTC)', 'Latitude', 'Longitude', 'Optimal Reflection Altitude (km)', 'Plasma Frequency (MHz)', 'Verdict', 'Reality Score', 'Confidence'])
+    writer.writerow(['Time (UTC)', 'Latitude', 'Longitude', 'Optimal Reflection Altitude (km)', 'Plasma Frequency (MHz)', 'Outer radius (°)', 'Inner radius (°)', 'Verdict', 'Reality Score', 'Confidence'])
     for loc in all_location_52:
         writer.writerow(loc)
 
