@@ -96,6 +96,13 @@ class MeteorSpikeClassifier:
             details['flags'].append('NO_DATA_IN_METEOR_ZONE')
             return 'REJECT', details
         
+        
+        if np.all(np.isnan(dens_zone)):
+            details['verdict'] = 'REJECT'
+            details['confidence'] = 1.0
+            details['flags'].append('ALL_NAN_IN_METEOR_ZONE')
+            return 'REJECT', details
+
         # Get peak properties
         peak_idx = np.nanargmax(dens_zone)
         peak_alt = alt_zone[peak_idx]

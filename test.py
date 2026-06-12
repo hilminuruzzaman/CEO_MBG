@@ -7,7 +7,7 @@ import datetime
 from meteor_spike_classifier import MeteorSpikeClassifier
 # Open the file
 
-folder_path = Path('asd')
+folder_path = Path('data\\2026\\140')
 output_folder = Path('csv')
 output_folder.mkdir(parents=True, exist_ok=True)
 plasma_freqs = []
@@ -17,7 +17,7 @@ count_52 = 0
 total_files = 0
 all_location_52 = []
 no_nan = 0
-for file in folder_path.glob('*.0001_nc'):
+for file in folder_path.rglob('*.0001_nc'):
     print("--------------------------------------------------------------")
     print(f"Processing file: {file.name}")
     total_files += 1
@@ -107,15 +107,14 @@ for file in folder_path.glob('*.0001_nc'):
             xx = np.pi - np.arcsin(sin_theta_crit*(6378+h_peak)/6378)
             min_theta = 180 - np.rad2deg(xx + np.arcsin(sin_theta_crit))
             all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz, max_theta, min_theta, verdict, details['reality_score'],details['confidence']))
-            if verdict == "ACCEPT":
+            """if verdict == "ACCEPT":
                 aewkfbjruwernaads=1
                 fig, axes = plt.subplots(figsize=(8, 5))
                 axes.plot(Ne,alt, label='Electron Density Profile')
                 axes.set_xlabel("Electron Density (e/cm³)")
                 axes.set_ylabel("Altitude (km)")
                 axes.set_title(f"Profile with Suspected Meteor Trail Spike - {file.stem}")
-                axes.grid(True)
-
+                axes.grid(True)"""
         plasma_freqs.append(fp_MHz)
 
     # Extract time from global attributes
