@@ -7,7 +7,7 @@ import datetime
 from meteor_spike_classifier import MeteorSpikeClassifier
 # Open the file
 
-folder_path = Path('data\\2026\\140')
+folder_path = Path('data\\2026')
 output_folder = Path('csv')
 output_folder.mkdir(parents=True, exist_ok=True)
 plasma_freqs = []
@@ -30,7 +30,7 @@ for file in folder_path.rglob('*.0001_nc'):
 
 
     # --- Electron density profile ---
-    ed = ds.variables['ELEC_dens'][:]  # Electron density (electrons/m³)
+    ed = ds.variables['ELEC_dens'][:]  # Electron density (electrons/cm³)
     ed[ed < 0] = np.nan  # Replace negative values with NaN
     #ed[ed > 1e12] = np.nan  # Replace unphysically high values with NaN
     ed_idk = []

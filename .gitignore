@@ -17,3 +17,4 @@ deploy/
 *.csv
 csv/
 *.0001_nc
+data/
