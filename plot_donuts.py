@@ -3,8 +3,8 @@ import folium
 import math
 
 # Load data
-df = pd.read_csv('profiles_with_fp_gt_5.2MHz.csv')
-
+#df = pd.read_csv('profiles_with_fp_gt_5.2MHz.csv')
+df = pd.read_csv('gooddonut.csv')
 # Color mapping for Verdict
 verdict_colors = {
 }
@@ -118,7 +118,7 @@ title_html = """
 """
 m.get_root().html.add_child(folium.Element(title_html))
 
-output_path = 'donut_map.html'
+output_path = 'donut_map_good.html'
 m.save(output_path)
 print(f"Map saved to {output_path}")
 print(f"Plotted {len(df)} locations.")
