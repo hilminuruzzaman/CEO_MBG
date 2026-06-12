@@ -17,6 +17,8 @@ count_52 = 0
 total_files = 0
 all_location_52 = []
 no_nan = 0
+freq_threshold = 30 #MHz
+
 for file in folder_path.rglob('*.0001_nc'):
     print("--------------------------------------------------------------")
     print(f"Processing file: {file.name}")
@@ -97,13 +99,13 @@ for file in folder_path.rglob('*.0001_nc'):
         no_nan += 1
         print(f"Optimal reflection altitude: {h_peak:.1f} km")
         print(f"Plasma frequency there: {fp_MHz:.2f} MHz")
-        if fp_MHz > np.sqrt(1-(6378/(6378+h_peak))**2)*30:
+        if fp_MHz > np.sqrt(1-(6378/(6378+h_peak))**2)*freq_threshold:
             count_52 += 1
             classifier = MeteorSpikeClassifier()
             # Create classifier and classify
             verdict, details = classifier.classify(alt, Ne)
             max_theta = np.rad2deg(np.arccos(6378/(6378+h_peak)))
-            sin_theta_crit = np.sqrt(1-fp_MHz**2/30**2)
+            sin_theta_crit = np.sqrt(1-fp_MHz**2/freq_threshold**2)
             xx = np.pi - np.arcsin(sin_theta_crit*(6378+h_peak)/6378)
             min_theta = 180 - np.rad2deg(xx + np.arcsin(sin_theta_crit))
             all_location_52.append((dt, perigee_lat, perigee_lon, h_peak, fp_MHz, max_theta, min_theta, verdict, details['reality_score'],details['confidence']))
